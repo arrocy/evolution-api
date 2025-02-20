@@ -13,9 +13,9 @@ CREATE TABLE `Instance` (
     `clientName` VARCHAR(100) NULL,
     `disconnectionReasonCode` INTEGER NULL,
     `disconnectionObject` JSON NULL,
-    `disconnectionAt` TIMESTAMP NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NULL,
+    `disconnectionAt` DATETIME(0) NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NULL,
 
     UNIQUE INDEX `Instance_name_key`(`name`),
     PRIMARY KEY (`id`)
@@ -26,7 +26,7 @@ CREATE TABLE `Session` (
     `id` VARCHAR(191) NOT NULL,
     `sessionId` VARCHAR(191) NOT NULL,
     `creds` TEXT NULL,
-    `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
     UNIQUE INDEX `Session_sessionId_key`(`sessionId`),
     PRIMARY KEY (`id`)
@@ -36,11 +36,16 @@ CREATE TABLE `Session` (
 CREATE TABLE `Chat` (
     `id` VARCHAR(191) NOT NULL,
     `remoteJid` VARCHAR(100) NOT NULL,
+    `name` VARCHAR(100) NULL,
     `labels` JSON NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NULL,
     `instanceId` VARCHAR(191) NOT NULL,
+    `unreadMessages` INTEGER NOT NULL DEFAULT 0,
 
+    INDEX `Chat_instanceId_idx`(`instanceId`),
+    INDEX `Chat_remoteJid_idx`(`remoteJid`),
+    UNIQUE INDEX `Chat_remoteJid_instanceId_key`(`remoteJid`, `instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -50,10 +55,13 @@ CREATE TABLE `Contact` (
     `remoteJid` VARCHAR(100) NOT NULL,
     `pushName` VARCHAR(100) NULL,
     `profilePicUrl` VARCHAR(500) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
+    INDEX `Contact_remoteJid_idx`(`remoteJid`),
+    INDEX `Contact_instanceId_idx`(`instanceId`),
+    UNIQUE INDEX `Contact_remoteJid_instanceId_key`(`remoteJid`, `instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -75,10 +83,11 @@ CREATE TABLE `Message` (
     `chatwootIsRead` BOOLEAN NULL DEFAULT false,
     `instanceId` VARCHAR(191) NOT NULL,
     `typebotSessionId` VARCHAR(191) NULL,
-    `openaiSessionId` VARCHAR(191) NULL,
     `webhookUrl` VARCHAR(500) NULL,
-    `difySessionId` VARCHAR(191) NULL,
+    `status` VARCHAR(30) NULL,
+    `sessionId` VARCHAR(191) NULL,
 
+    INDEX `Message_instanceId_idx`(`instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -94,6 +103,8 @@ CREATE TABLE `MessageUpdate` (
     `messageId` VARCHAR(191) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
+    INDEX `MessageUpdate_instanceId_idx`(`instanceId`),
+    INDEX `MessageUpdate_messageId_idx`(`messageId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -101,15 +112,17 @@ CREATE TABLE `MessageUpdate` (
 CREATE TABLE `Webhook` (
     `id` VARCHAR(191) NOT NULL,
     `url` VARCHAR(500) NOT NULL,
+    `headers` JSON NULL,
     `enabled` BOOLEAN NULL DEFAULT true,
     `events` JSON NULL,
     `webhookByEvents` BOOLEAN NULL DEFAULT false,
     `webhookBase64` BOOLEAN NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Webhook_instanceId_key`(`instanceId`),
+    INDEX `Webhook_instanceId_idx`(`instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -132,8 +145,9 @@ CREATE TABLE `Chatwoot` (
     `daysLimitImportMessages` INTEGER NULL,
     `organization` VARCHAR(100) NULL,
     `logo` VARCHAR(500) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `ignoreJids` JSON NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Chatwoot_instanceId_key`(`instanceId`),
@@ -147,11 +161,11 @@ CREATE TABLE `Label` (
     `name` VARCHAR(100) NOT NULL,
     `color` VARCHAR(100) NOT NULL,
     `predefinedId` VARCHAR(100) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `Label_labelId_key`(`labelId`),
+    UNIQUE INDEX `Label_labelId_instanceId_key`(`labelId`, `instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -164,8 +178,8 @@ CREATE TABLE `Proxy` (
     `protocol` VARCHAR(100) NOT NULL,
     `username` VARCHAR(100) NOT NULL,
     `password` VARCHAR(100) NOT NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Proxy_instanceId_key`(`instanceId`),
@@ -182,11 +196,13 @@ CREATE TABLE `Setting` (
     `readMessages` BOOLEAN NOT NULL DEFAULT false,
     `readStatus` BOOLEAN NOT NULL DEFAULT false,
     `syncFullHistory` BOOLEAN NOT NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `wavoipToken` VARCHAR(100) NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Setting_instanceId_key`(`instanceId`),
+    INDEX `Setting_instanceId_idx`(`instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -195,8 +211,8 @@ CREATE TABLE `Rabbitmq` (
     `id` VARCHAR(191) NOT NULL,
     `enabled` BOOLEAN NOT NULL DEFAULT false,
     `events` JSON NOT NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Rabbitmq_instanceId_key`(`instanceId`),
@@ -208,8 +224,8 @@ CREATE TABLE `Sqs` (
     `id` VARCHAR(191) NOT NULL,
     `enabled` BOOLEAN NOT NULL DEFAULT false,
     `events` JSON NOT NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Sqs_instanceId_key`(`instanceId`),
@@ -221,11 +237,29 @@ CREATE TABLE `Websocket` (
     `id` VARCHAR(191) NOT NULL,
     `enabled` BOOLEAN NOT NULL DEFAULT false,
     `events` JSON NOT NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Websocket_instanceId_key`(`instanceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Pusher` (
+    `id` VARCHAR(191) NOT NULL,
+    `enabled` BOOLEAN NOT NULL DEFAULT false,
+    `appId` VARCHAR(100) NOT NULL,
+    `key` VARCHAR(100) NOT NULL,
+    `secret` VARCHAR(100) NOT NULL,
+    `cluster` VARCHAR(100) NOT NULL,
+    `useTLS` BOOLEAN NOT NULL DEFAULT false,
+    `events` JSON NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `Pusher_instanceId_key`(`instanceId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -244,29 +278,12 @@ CREATE TABLE `Typebot` (
     `stopBotFromMe` BOOLEAN NULL DEFAULT false,
     `keepOpen` BOOLEAN NULL DEFAULT false,
     `debounceTime` INTEGER NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NULL,
     `ignoreJids` JSON NULL,
-    `triggerType` ENUM('all', 'keyword', 'none') NULL,
+    `triggerType` ENUM('all', 'keyword', 'none', 'advanced') NULL,
     `triggerOperator` ENUM('contains', 'equals', 'startsWith', 'endsWith', 'regex') NULL,
     `triggerValue` VARCHAR(191) NULL,
-    `instanceId` VARCHAR(191) NOT NULL,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `TypebotSession` (
-    `id` VARCHAR(191) NOT NULL,
-    `remoteJid` VARCHAR(100) NOT NULL,
-    `pushName` VARCHAR(100) NULL,
-    `sessionId` VARCHAR(100) NOT NULL,
-    `status` ENUM('opened', 'closed', 'paused') NOT NULL,
-    `prefilledVariables` JSON NULL,
-    `awaitUser` BOOLEAN NOT NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
-    `typebotId` VARCHAR(191) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -285,11 +302,30 @@ CREATE TABLE `TypebotSetting` (
     `debounceTime` INTEGER NULL,
     `typebotIdFallback` VARCHAR(100) NULL,
     `ignoreJids` JSON NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `TypebotSetting_instanceId_key`(`instanceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `IntegrationSession` (
+    `id` VARCHAR(191) NOT NULL,
+    `sessionId` VARCHAR(255) NOT NULL,
+    `remoteJid` VARCHAR(100) NOT NULL,
+    `pushName` VARCHAR(191) NULL,
+    `status` ENUM('opened', 'closed', 'paused') NOT NULL,
+    `awaitUser` BOOLEAN NOT NULL DEFAULT false,
+    `context` JSON NULL,
+    `type` VARCHAR(100) NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+    `parameters` JSON NULL,
+    `botId` VARCHAR(191) NULL,
+
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -299,7 +335,7 @@ CREATE TABLE `Media` (
     `fileName` VARCHAR(500) NOT NULL,
     `type` VARCHAR(100) NOT NULL,
     `mimetype` VARCHAR(100) NOT NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
     `messageId` VARCHAR(191) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
@@ -313,8 +349,8 @@ CREATE TABLE `OpenaiCreds` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(255) NULL,
     `apiKey` VARCHAR(255) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `OpenaiCreds_name_key`(`name`),
@@ -344,27 +380,14 @@ CREATE TABLE `OpenaiBot` (
     `keepOpen` BOOLEAN NULL DEFAULT false,
     `debounceTime` INTEGER NULL,
     `ignoreJids` JSON NULL,
-    `triggerType` ENUM('all', 'keyword', 'none') NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `triggerType` ENUM('all', 'keyword', 'none', 'advanced') NULL,
     `triggerOperator` ENUM('contains', 'equals', 'startsWith', 'endsWith', 'regex') NULL,
     `triggerValue` VARCHAR(191) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `openaiCredsId` VARCHAR(191) NOT NULL,
-    `instanceId` VARCHAR(191) NOT NULL,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `OpenaiSession` (
-    `id` VARCHAR(191) NOT NULL,
-    `sessionId` VARCHAR(255) NOT NULL,
-    `remoteJid` VARCHAR(100) NOT NULL,
-    `status` ENUM('opened', 'closed', 'paused') NOT NULL,
-    `awaitUser` BOOLEAN NOT NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
-    `openaiBotId` VARCHAR(191) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -382,9 +405,11 @@ CREATE TABLE `OpenaiSetting` (
     `keepOpen` BOOLEAN NULL DEFAULT false,
     `debounceTime` INTEGER NULL,
     `ignoreJids` JSON NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
     `speechToText` BOOLEAN NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `openaiCredsId` VARCHAR(191) NOT NULL,
     `openaiIdFallback` VARCHAR(100) NULL,
     `instanceId` VARCHAR(191) NOT NULL,
@@ -401,8 +426,8 @@ CREATE TABLE `Template` (
     `name` VARCHAR(255) NOT NULL,
     `template` JSON NOT NULL,
     `webhookUrl` VARCHAR(500) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `Template_templateId_key`(`templateId`),
@@ -427,26 +452,13 @@ CREATE TABLE `Dify` (
     `keepOpen` BOOLEAN NULL DEFAULT false,
     `debounceTime` INTEGER NULL,
     `ignoreJids` JSON NULL,
-    `triggerType` ENUM('all', 'keyword', 'none') NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `triggerType` ENUM('all', 'keyword', 'none', 'advanced') NULL,
     `triggerOperator` ENUM('contains', 'equals', 'startsWith', 'endsWith', 'regex') NULL,
     `triggerValue` VARCHAR(191) NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
-    `instanceId` VARCHAR(191) NOT NULL,
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `DifySession` (
-    `id` VARCHAR(191) NOT NULL,
-    `sessionId` VARCHAR(255) NOT NULL,
-    `remoteJid` VARCHAR(100) NOT NULL,
-    `status` ENUM('opened', 'closed', 'paused') NOT NULL,
-    `awaitUser` BOOLEAN NOT NULL DEFAULT false,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
-    `difyId` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -464,12 +476,128 @@ CREATE TABLE `DifySetting` (
     `keepOpen` BOOLEAN NULL DEFAULT false,
     `debounceTime` INTEGER NULL,
     `ignoreJids` JSON NULL,
-    `createdAt` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-    `updatedAt` TIMESTAMP NOT NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
     `difyIdFallback` VARCHAR(100) NULL,
     `instanceId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `DifySetting_instanceId_key`(`instanceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `EvolutionBot` (
+    `id` VARCHAR(191) NOT NULL,
+    `enabled` BOOLEAN NOT NULL DEFAULT true,
+    `description` VARCHAR(255) NULL,
+    `apiUrl` VARCHAR(255) NULL,
+    `apiKey` VARCHAR(255) NULL,
+    `expire` INTEGER NULL DEFAULT 0,
+    `keywordFinish` VARCHAR(100) NULL,
+    `delayMessage` INTEGER NULL,
+    `unknownMessage` VARCHAR(100) NULL,
+    `listeningFromMe` BOOLEAN NULL DEFAULT false,
+    `stopBotFromMe` BOOLEAN NULL DEFAULT false,
+    `keepOpen` BOOLEAN NULL DEFAULT false,
+    `debounceTime` INTEGER NULL,
+    `ignoreJids` JSON NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `triggerType` ENUM('all', 'keyword', 'none', 'advanced') NULL,
+    `triggerOperator` ENUM('contains', 'equals', 'startsWith', 'endsWith', 'regex') NULL,
+    `triggerValue` VARCHAR(191) NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `EvolutionBotSetting` (
+    `id` VARCHAR(191) NOT NULL,
+    `expire` INTEGER NULL DEFAULT 0,
+    `keywordFinish` VARCHAR(100) NULL,
+    `delayMessage` INTEGER NULL,
+    `unknownMessage` VARCHAR(100) NULL,
+    `listeningFromMe` BOOLEAN NULL DEFAULT false,
+    `stopBotFromMe` BOOLEAN NULL DEFAULT false,
+    `keepOpen` BOOLEAN NULL DEFAULT false,
+    `debounceTime` INTEGER NULL,
+    `ignoreJids` JSON NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `botIdFallback` VARCHAR(100) NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `EvolutionBotSetting_instanceId_key`(`instanceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Flowise` (
+    `id` VARCHAR(191) NOT NULL,
+    `enabled` BOOLEAN NOT NULL DEFAULT true,
+    `description` VARCHAR(255) NULL,
+    `apiUrl` VARCHAR(255) NULL,
+    `apiKey` VARCHAR(255) NULL,
+    `expire` INTEGER NULL DEFAULT 0,
+    `keywordFinish` VARCHAR(100) NULL,
+    `delayMessage` INTEGER NULL,
+    `unknownMessage` VARCHAR(100) NULL,
+    `listeningFromMe` BOOLEAN NULL DEFAULT false,
+    `stopBotFromMe` BOOLEAN NULL DEFAULT false,
+    `keepOpen` BOOLEAN NULL DEFAULT false,
+    `debounceTime` INTEGER NULL,
+    `ignoreJids` JSON NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `triggerType` ENUM('all', 'keyword', 'none', 'advanced') NULL,
+    `triggerOperator` ENUM('contains', 'equals', 'startsWith', 'endsWith', 'regex') NULL,
+    `triggerValue` VARCHAR(191) NULL,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `FlowiseSetting` (
+    `id` VARCHAR(191) NOT NULL,
+    `expire` INTEGER NULL DEFAULT 0,
+    `keywordFinish` VARCHAR(100) NULL,
+    `delayMessage` INTEGER NULL,
+    `unknownMessage` VARCHAR(100) NULL,
+    `listeningFromMe` BOOLEAN NULL DEFAULT false,
+    `stopBotFromMe` BOOLEAN NULL DEFAULT false,
+    `keepOpen` BOOLEAN NULL DEFAULT false,
+    `debounceTime` INTEGER NULL,
+    `ignoreJids` JSON NULL,
+    `splitMessages` BOOLEAN NULL DEFAULT false,
+    `timePerChar` INTEGER NULL DEFAULT 50,
+    `createdAt` DATETIME(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+    `flowiseIdFallback` VARCHAR(100) NULL,
+    `instanceId` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `FlowiseSetting_instanceId_key`(`instanceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `IsOnWhatsapp` (
+    `id` VARCHAR(191) NOT NULL,
+    `remoteJid` VARCHAR(100) NOT NULL,
+    `jidOptions` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updatedAt` DATETIME(0) NOT NULL,
+
+    UNIQUE INDEX `IsOnWhatsapp_remoteJid_key`(`remoteJid`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -486,13 +614,7 @@ ALTER TABLE `Contact` ADD CONSTRAINT `Contact_instanceId_fkey` FOREIGN KEY (`ins
 ALTER TABLE `Message` ADD CONSTRAINT `Message_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Message` ADD CONSTRAINT `Message_typebotSessionId_fkey` FOREIGN KEY (`typebotSessionId`) REFERENCES `TypebotSession`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `Message` ADD CONSTRAINT `Message_openaiSessionId_fkey` FOREIGN KEY (`openaiSessionId`) REFERENCES `OpenaiSession`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `Message` ADD CONSTRAINT `Message_difySessionId_fkey` FOREIGN KEY (`difySessionId`) REFERENCES `DifySession`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `Message` ADD CONSTRAINT `Message_sessionId_fkey` FOREIGN KEY (`sessionId`) REFERENCES `IntegrationSession`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `MessageUpdate` ADD CONSTRAINT `MessageUpdate_messageId_fkey` FOREIGN KEY (`messageId`) REFERENCES `Message`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -525,19 +647,19 @@ ALTER TABLE `Sqs` ADD CONSTRAINT `Sqs_instanceId_fkey` FOREIGN KEY (`instanceId`
 ALTER TABLE `Websocket` ADD CONSTRAINT `Websocket_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Pusher` ADD CONSTRAINT `Pusher_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Typebot` ADD CONSTRAINT `Typebot_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `TypebotSession` ADD CONSTRAINT `TypebotSession_typebotId_fkey` FOREIGN KEY (`typebotId`) REFERENCES `Typebot`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `TypebotSession` ADD CONSTRAINT `TypebotSession_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `TypebotSetting` ADD CONSTRAINT `TypebotSetting_typebotIdFallback_fkey` FOREIGN KEY (`typebotIdFallback`) REFERENCES `Typebot`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `TypebotSetting` ADD CONSTRAINT `TypebotSetting_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `IntegrationSession` ADD CONSTRAINT `IntegrationSession_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Media` ADD CONSTRAINT `Media_messageId_fkey` FOREIGN KEY (`messageId`) REFERENCES `Message`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -555,12 +677,6 @@ ALTER TABLE `OpenaiBot` ADD CONSTRAINT `OpenaiBot_openaiCredsId_fkey` FOREIGN KE
 ALTER TABLE `OpenaiBot` ADD CONSTRAINT `OpenaiBot_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `OpenaiSession` ADD CONSTRAINT `OpenaiSession_openaiBotId_fkey` FOREIGN KEY (`openaiBotId`) REFERENCES `OpenaiBot`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `OpenaiSession` ADD CONSTRAINT `OpenaiSession_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `OpenaiSetting` ADD CONSTRAINT `OpenaiSetting_openaiCredsId_fkey` FOREIGN KEY (`openaiCredsId`) REFERENCES `OpenaiCreds`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -576,13 +692,25 @@ ALTER TABLE `Template` ADD CONSTRAINT `Template_instanceId_fkey` FOREIGN KEY (`i
 ALTER TABLE `Dify` ADD CONSTRAINT `Dify_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `DifySession` ADD CONSTRAINT `DifySession_difyId_fkey` FOREIGN KEY (`difyId`) REFERENCES `Dify`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `DifySession` ADD CONSTRAINT `DifySession_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `DifySetting` ADD CONSTRAINT `DifySetting_difyIdFallback_fkey` FOREIGN KEY (`difyIdFallback`) REFERENCES `Dify`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `DifySetting` ADD CONSTRAINT `DifySetting_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `EvolutionBot` ADD CONSTRAINT `EvolutionBot_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `EvolutionBotSetting` ADD CONSTRAINT `EvolutionBotSetting_botIdFallback_fkey` FOREIGN KEY (`botIdFallback`) REFERENCES `EvolutionBot`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `EvolutionBotSetting` ADD CONSTRAINT `EvolutionBotSetting_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Flowise` ADD CONSTRAINT `Flowise_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `FlowiseSetting` ADD CONSTRAINT `FlowiseSetting_flowiseIdFallback_fkey` FOREIGN KEY (`flowiseIdFallback`) REFERENCES `Flowise`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `FlowiseSetting` ADD CONSTRAINT `FlowiseSetting_instanceId_fkey` FOREIGN KEY (`instanceId`) REFERENCES `Instance`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

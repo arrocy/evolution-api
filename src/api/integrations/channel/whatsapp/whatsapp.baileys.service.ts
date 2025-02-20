@@ -512,7 +512,7 @@ export class BaileysStartupService extends ChannelStartupService {
         where: {
           instanceId: this.instanceId,
           key: {
-            path: ['id'],
+            path: '%id',
             equals: key.id,
           },
         },
@@ -805,8 +805,8 @@ export class BaileysStartupService extends ChannelStartupService {
     'chats.delete': async (chats: string[]) => {
       chats.forEach(
         async (chat) =>
-          await this.prismaRepository.chat.deleteMany({
-            where: { instanceId: this.instanceId, remoteJid: chat },
+          await this.prismaRepository.chat.delete({
+            where: { remoteJid_instanceId: { instanceId: this.instanceId, remoteJid: chat } },
           }),
       );
 
@@ -873,8 +873,8 @@ export class BaileysStartupService extends ChannelStartupService {
           this.sendDataWebhook(Events.CONTACTS_UPDATE, updatedContacts);
           await Promise.all(
             updatedContacts.map(async (contact) => {
-              const update = this.prismaRepository.contact.updateMany({
-                where: { remoteJid: contact.remoteJid, instanceId: this.instanceId },
+              const update = this.prismaRepository.contact.update({
+                where: { remoteJid_instanceId: { remoteJid: contact.remoteJid, instanceId: this.instanceId } },
                 data: {
                   profilePicUrl: contact.profilePicUrl,
                 },
@@ -1177,8 +1177,8 @@ export class BaileysStartupService extends ChannelStartupService {
           if (settings?.groupsIgnore && received.key.remoteJid.includes('@g.us')) {
             continue;
           }
-          const existingChat = await this.prismaRepository.chat.findFirst({
-            where: { instanceId: this.instanceId, remoteJid: received.key.remoteJid },
+          const existingChat = await this.prismaRepository.chat.findUnique({
+            where: { remoteJid_instanceId: { instanceId: this.instanceId, remoteJid: received.key.remoteJid } },
             select: { id: true, name: true },
           });
 
@@ -1353,8 +1353,8 @@ export class BaileysStartupService extends ChannelStartupService {
             pushName: messageRaw.pushName,
           });
 
-          const contact = await this.prismaRepository.contact.findFirst({
-            where: { remoteJid: received.key.remoteJid, instanceId: this.instanceId },
+          const contact = await this.prismaRepository.contact.findUnique({
+            where: { remoteJid_instanceId: { remoteJid: received.key.remoteJid, instanceId: this.instanceId } },
           });
 
           const contactRaw: { remoteJid: string; pushName: string; profilePicUrl?: string; instanceId: string } = {
@@ -1450,7 +1450,7 @@ export class BaileysStartupService extends ChannelStartupService {
             where: {
               instanceId: this.instanceId,
               key: {
-                path: ['id'],
+                path: '%id',
                 equals: key.id,
               },
             },
@@ -1521,8 +1521,8 @@ export class BaileysStartupService extends ChannelStartupService {
               data: message,
             });
 
-          const existingChat = await this.prismaRepository.chat.findFirst({
-            where: { instanceId: this.instanceId, remoteJid: message.remoteJid },
+          const existingChat = await this.prismaRepository.chat.findUnique({
+            where: { remoteJid_instanceId: { instanceId: this.instanceId, remoteJid: message.remoteJid } },
           });
 
           if (existingChat) {
@@ -1590,8 +1590,8 @@ export class BaileysStartupService extends ChannelStartupService {
 
       const savedLabel = labelsRepository.find((l) => l.labelId === label.id);
       if (label.deleted && savedLabel) {
-        await this.prismaRepository.label.delete({
-          where: { labelId_instanceId: { instanceId: this.instanceId, labelId: label.id } },
+        await this.prismaRepository.label.deleteMany({
+          where: { instanceId: this.instanceId, labelId: label.id },
         });
         this.sendDataWebhook(Events.LABELS_EDIT, { ...label, instance: this.instance.name });
         return;
@@ -3555,7 +3555,7 @@ export class BaileysStartupService extends ChannelStartupService {
           let message = await this.prismaRepository.message.findFirst({
             where: {
               key: {
-                path: ['id'],
+                path: '%id',
                 equals: messageId,
               },
             },
@@ -4360,8 +4360,8 @@ export class BaileysStartupService extends ChannelStartupService {
     const result = await this.prismaRepository.message.updateMany({
       where: {
         AND: [
-          { key: { path: ['remoteJid'], equals: remoteJid } },
-          { key: { path: ['fromMe'], equals: false } },
+          { key: { path: '%remoteJid', equals: remoteJid } },
+          { key: { path: '%fromMe', equals: false } },
           { messageTimestamp: { lte: timestamp } },
           {
             OR: [{ status: null }, { status: status[3] }],
@@ -4388,8 +4388,8 @@ export class BaileysStartupService extends ChannelStartupService {
       this.prismaRepository.message.count({
         where: {
           AND: [
-            { key: { path: ['remoteJid'], equals: remoteJid } },
-            { key: { path: ['fromMe'], equals: false } },
+            { key: { path: '%remoteJid', equals: remoteJid } },
+            { key: { path: '%fromMe', equals: false } },
             { status: { equals: status[3] } },
           ],
         },

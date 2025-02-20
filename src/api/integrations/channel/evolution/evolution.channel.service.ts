@@ -229,10 +229,12 @@ export class EvolutionStartupService extends ChannelStartupService {
     });
 
     if (existingContact) {
-      await this.prismaRepository.contact.updateMany({
+      await this.prismaRepository.contact.update({
         where: {
-          remoteJid: data.remoteJid,
-          instanceId: this.instanceId,
+          remoteJid_instanceId: {
+            remoteJid: data.remoteJid,
+            instanceId: this.instanceId,
+          },
         },
         data: contactRaw,
       });
@@ -256,8 +258,8 @@ export class EvolutionStartupService extends ChannelStartupService {
       );
     }
 
-    const chat = await this.prismaRepository.chat.findFirst({
-      where: { instanceId: this.instanceId, remoteJid: data.remoteJid },
+    const chat = await this.prismaRepository.chat.findUnique({
+      where: { remoteJid_instanceId: { instanceId: this.instanceId, remoteJid: data.remoteJid } },
     });
 
     if (chat) {

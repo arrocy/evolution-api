@@ -1422,7 +1422,7 @@ export class ChatwootService {
           const lastMessage = await this.prismaRepository.message.findFirst({
             where: {
               key: {
-                path: ['fromMe'],
+                path: '%fromMe',
                 equals: false,
               },
               instanceId: instance.instanceId,
@@ -1457,7 +1457,7 @@ export class ChatwootService {
               where: {
                 instanceId: instance.instanceId,
                 key: {
-                  path: ['id'],
+                  path: '%id',
                   equals: key.id,
                 },
               },
@@ -1506,7 +1506,7 @@ export class ChatwootService {
     await this.prismaRepository.message.updateMany({
       where: {
         key: {
-          path: ['id'],
+          path: '%id',
           equals: key.id,
         },
         instanceId: instance.instanceId,
@@ -1529,7 +1529,7 @@ export class ChatwootService {
     const messages = await this.prismaRepository.message.findFirst({
       where: {
         key: {
-          path: ['id'],
+          path: '%id',
           equals: keyId,
         },
         instanceId: instance.instanceId,
@@ -1910,7 +1910,7 @@ export class ChatwootService {
           quotedMsg = await this.prismaRepository.message.findFirst({
             where: {
               key: {
-                path: ['id'],
+                path: '%id',
                 equals: quotedId,
               },
               chatwootMessageId: {
@@ -2183,7 +2183,7 @@ export class ChatwootService {
             await this.prismaRepository.message.deleteMany({
               where: {
                 key: {
-                  path: ['id'],
+                  path: '%id',
                   equals: body.key.id,
                 },
                 instanceId: instance.instanceId,
@@ -2488,7 +2488,7 @@ export class ChatwootService {
         where: {
           Instance: { name: instance.instanceName },
           messageTimestamp: { gte: dayjs().subtract(6, 'hours').unix() },
-          AND: ids.map((id) => ({ key: { path: ['id'], not: id } })),
+          AND: ids.map((id) => ({ key: { path: '%id', not: id } })),
         },
       });
 
